@@ -105,6 +105,13 @@
     save();
   });
   $('[data-extras]').addEventListener('click', () => invoke('open_extras'));
+  $('[data-hooks]').addEventListener('click', () => {
+    const out = $('[data-hooks-out]');
+    out.textContent = 'Ligando…';
+    invoke('install_hooks')
+      .then(() => { out.textContent = 'Hooks ligados. Reinicie as sessões do Claude Code que estavam abertas.'; })
+      .catch(e => { out.textContent = 'Não deu certo: ' + String(e).split('\n')[0] + ' Confira se o Node.js está instalado.'; });
+  });
 
   /* ---------- uso do plano ---------- */
   function renderUsage(u) {
@@ -137,7 +144,8 @@
   invoke('get_config').then(r => {
     if (!r) return;
     cfg = r.cfg;
-    build(r.grupos);
+    // no Mac a tela cheia ainda não é detectada: não mostra a opção
+    build(r.plataforma === 'macos' ? r.grupos.filter(g => g.chave !== 'telacheia') : r.grupos);
     fill();
     renderUsage(r.uso);
   });

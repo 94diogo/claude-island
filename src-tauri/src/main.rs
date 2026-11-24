@@ -15,7 +15,10 @@ use serde_json::{json, Value};
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::TrayIconBuilder;
 use tauri::{AppHandle, Emitter, LogicalSize, Manager, Monitor, PhysicalPosition, WebviewWindow};
+use tauri_plugin_autostart::ManagerExt;
 use tiny_http::{Header, Method, Response, Server};
+
+mod plat;
 
 const PORT: u16 = 47821;
 const PERM_WAIT: Duration = Duration::from_secs(30);
@@ -72,7 +75,7 @@ fn log(msg: String) {
 }
 
 /// Log em %TEMP%claude-island.log (zerado a cada abertura) para diagnosticar sem console.
-fn write_log(line: &str) {
+pub(crate) fn write_log(line: &str) {
     use std::io::Write;
     eprintln!("{line}");
     let path = std::env::temp_dir().join("claude-island.log");
@@ -94,7 +97,8 @@ fn default_cfg() -> Value {
         "ocultar": ocultar,
         "dnd": { "ligado": false, "inicio": "22:00", "fim": "08:00", "dias": [0, 1, 2, 3, 4, 5, 6] },
         "aparencia": { "opacidade": 1.0, "escala": 1.0, "compacto": false },
-        "uso": { "mostrar": true }
+        "uso": { "mostrar": true },
+        "sistema": { "abrir_com_sistema": false }
     })
 }
 
@@ -142,12 +146,18 @@ fn save_cfg(app: &AppHandle, cfg: &Value) {
 
 /// Tudo que a janela de configurações precisa: valores, rótulos dos grupos e último uso.
 #[tauri::command]
-fn get_config(state: tauri::State<Arc<Shared>>) -> Value {
+fn get_config(app: AppHandle, state: tauri::State<Arc<Shared>>) -> Value {
     let grupos: Vec<Value> = GROUPS.iter().map(|(k, label, _, _)| json!({ "chave": k, "rotulo": label })).collect();
+    let mut cfg = state.cfg.lock().unwrap().clone();
+    // o estado real do "abrir com o sistema" vem do sistema, não do arquivo
+    if let Ok(on) = app.autolaunch().is_enabled() {
+        cfg["sistema"]["abrir_com_sistema"] = Value::Bool(on);
+    }
     json!({
-        "cfg": state.cfg.lock().unwrap().clone(),
+        "cfg": cfg,
         "grupos": grupos,
         "uso": state.usage.lock().unwrap().clone(),
+        "plataforma": std::env::consts::OS,
     })
 }
 
@@ -161,6 +171,11 @@ fn set_config(app: AppHandle, state: tauri::State<Arc<Shared>>, cfg: Value) {
     *shared.cfg.lock().unwrap() = full.clone();
     save_cfg(&app, &full);
     let _ = app.emit("island-config", full.clone());
+    let auto = full["sistema"]["abrir_com_sistema"].as_bool().unwrap_or(false);
+    if app.autolaunch().is_enabled().ok() != Some(auto) {
+        let r = if auto { app.autolaunch().enable() } else { app.autolaunch().disable() };
+        write_log(&format!("[sistema] abrir com o sistema = {auto}: {r:?}"));
+    }
     let new_scale = scale_of(&full);
     if (new_scale - old_scale).abs() > 0.001 {
         if let Some(win) = app.get_webview_window("main") {
@@ -174,11 +189,63 @@ fn set_config(app: AppHandle, state: tauri::State<Arc<Shared>>, cfg: Value) {
     write_log("[config] salva");
 }
 
+/// Roda o install-hooks.js que vem junto com o app. No Mac e no Linux o app aberto
+/// pelo Finder ou pelo menu não herda o PATH do terminal, então tenta pelo shell de login.
+fn run_install_hooks(app: &AppHandle) -> Result<String, String> {
+    let script = app
+        .path()
+        .resource_dir()
+        .map_err(|e| e.to_string())?
+        .join("install-hooks.js");
+    if !script.exists() {
+        return Err(format!("não achei {}", script.display()));
+    }
+    #[cfg(windows)]
+    let out = std::process::Command::new("node").arg(&script).output();
+    #[cfg(not(windows))]
+    let out = {
+        let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/sh".into());
+        std::process::Command::new(shell)
+            // o caminho vai como $0, sem passar por aspas dentro do comando
+            .args(["-lc", "node \"$0\""])
+            .arg(&script)
+            .output()
+    };
+    let out = out.map_err(|e| format!("não consegui rodar o node: {e}"))?;
+    let text = String::from_utf8_lossy(&out.stdout).to_string() + &String::from_utf8_lossy(&out.stderr);
+    if out.status.success() { Ok(text) } else { Err(text) }
+}
+
+#[tauri::command]
+fn install_hooks(app: AppHandle) -> Result<String, String> {
+    let r = run_install_hooks(&app);
+    write_log(&format!("[hooks] {r:?}"));
+    r
+}
+
+/// Mac e Linux não têm o instalador NSIS, que liga os hooks no Windows:
+/// na primeira vez que o app abre, ele mesmo liga.
+#[cfg(not(windows))]
+fn first_run_hooks(app: &AppHandle) {
+    let flag = config_path(app, "hooks-ligados");
+    if flag.exists() {
+        return;
+    }
+    match run_install_hooks(app) {
+        Ok(t) => {
+            let _ = std::fs::create_dir_all(flag.parent().unwrap());
+            let _ = std::fs::write(&flag, "");
+            write_log(&format!("[hooks] ligados na primeira abertura: {t}"));
+        }
+        Err(e) => write_log(&format!("[hooks] falhou na primeira abertura: {e}")),
+    }
+}
+
 #[tauri::command]
 fn open_extras(app: AppHandle) {
     let path = config_path(&app, "apps-extras.txt");
     extra_apps(&path); // cria o modelo se faltar
-    let _ = std::process::Command::new("notepad.exe").arg(&path).spawn();
+    plat::open_text(&path);
 }
 
 fn open_settings(app: &AppHandle) {
@@ -481,27 +548,31 @@ fn hit_loop(win: WebviewWindow, shared: Arc<Shared>) {
     }
 }
 
-/// O que esconde a ilha: (chave, rótulo no menu, .exe que contam, ligado por padrão).
-/// "telacheia" e "extras" não têm .exe fixo: tela cheia é detectada à parte, e a lista
+/// O que esconde a ilha: (chave, rótulo, apps que contam, ligado por padrão).
+/// Nomes em minúsculo e sem ".exe" (ver plat::norm), com as variantes de Windows, Mac e Linux.
+/// "telacheia" e "extras" não têm app fixo: tela cheia é detectada à parte, e a lista
 /// extra vem de apps-extras.txt.
 const GROUPS: &[(&str, &str, &[&str], bool)] = &[
-    ("navegador", "Reunião no navegador (Meet etc.)", &["chrome.exe", "msedge.exe", "firefox.exe", "brave.exe", "opera.exe", "vivaldi.exe", "arc.exe"], true),
-    ("teams", "Microsoft Teams", &["ms-teams.exe", "teams.exe"], true),
-    ("zoom", "Zoom", &["zoom.exe"], true),
-    ("whatsapp", "WhatsApp", &["whatsapp.exe", "whatsapp.root.exe"], true),
-    ("slack", "Slack", &["slack.exe"], true),
-    ("webex", "Webex e Skype", &["webex.exe", "ciscocollabhost.exe", "skype.exe"], true),
-    ("granola", "Granola", &["granola.exe"], true),
-    ("telegram", "Telegram", &["telegram.exe"], false),
-    ("discord", "Discord (chamada de voz)", &["discord.exe", "discordptb.exe", "discordcanary.exe"], false),
+    ("navegador", "Reunião no navegador (Meet etc.)", &[
+        "chrome", "google chrome", "google-chrome", "chromium", "chromium-browser", "msedge", "microsoft edge",
+        "microsoft-edge", "firefox", "brave", "brave browser", "opera", "vivaldi", "arc", "safari",
+    ], true),
+    ("teams", "Microsoft Teams", &["ms-teams", "teams", "microsoft teams", "teams-for-linux"], true),
+    ("zoom", "Zoom", &["zoom", "zoom.us"], true),
+    ("whatsapp", "WhatsApp", &["whatsapp", "whatsapp.root"], true),
+    ("slack", "Slack", &["slack"], true),
+    ("webex", "Webex, Skype e FaceTime", &["webex", "ciscocollabhost", "skype", "skypeforlinux", "facetime"], true),
+    ("granola", "Granola", &["granola"], true),
+    ("telegram", "Telegram", &["telegram", "telegram desktop", "telegram-desktop"], false),
+    ("discord", "Discord (chamada de voz)", &["discord", "discordptb", "discordcanary"], false),
     ("telacheia", "Jogo ou app em tela cheia", &[], false),
     ("extras", "Apps da lista extra", &[], true),
 ];
 
-const EXTRA_APPS: &str = "# Lista extra: a ilha some quando um destes .exe usa o microfone.
-# Um nome por linha (ex.: steam.exe). Linhas com # são ignoradas.
-# Vale ao salvar. Liga/desliga no menu da bandeja, \"Apps da lista extra\".
-# O nome de um app que usou o microfone aparece no log: %TEMP%\\claude-island.log
+const EXTRA_APPS: &str = "# Lista extra: a ilha some quando um destes apps usa o microfone.
+# Um nome de app ou processo por linha (ex.: steam.exe, zoom.us). Linhas com # são ignoradas.
+# Vale ao salvar. Liga e desliga nas configurações, em \"Apps da lista extra\".
+# O nome de um app que usou o microfone aparece no log claude-island.log, na pasta temporária.
 ";
 
 fn config_path(app: &AppHandle, name: &str) -> std::path::PathBuf {
@@ -519,105 +590,10 @@ fn extra_apps(path: &std::path::Path) -> Vec<String> {
     std::fs::read_to_string(path)
         .unwrap_or_default()
         .lines()
-        .map(|l| l.trim().to_lowercase())
+        .map(|l| l.trim())
         .filter(|l| !l.is_empty() && !l.starts_with('#'))
+        .map(plat::norm)
         .collect()
-}
-
-/// A janela da frente ocupa o monitor inteiro (jogo, vídeo em tela cheia, apresentação)?
-/// Janela maximizada não conta. Devolve o .exe dela.
-fn fullscreen_app(own: isize) -> Option<String> {
-    use windows::Win32::Foundation::RECT;
-    use windows::Win32::Graphics::Gdi::{GetMonitorInfoW, MonitorFromWindow, MONITORINFO, MONITOR_DEFAULTTONEAREST};
-    use windows::Win32::UI::WindowsAndMessaging::{
-        GetClassNameW, GetDesktopWindow, GetForegroundWindow, GetShellWindow, GetWindowRect,
-        GetWindowThreadProcessId, IsZoomed,
-    };
-    unsafe {
-        let h = GetForegroundWindow();
-        if h.0.is_null() || h == GetShellWindow() || h == GetDesktopWindow() || h.0 as isize == own {
-            return None;
-        }
-        let mut cls = [0u16; 64];
-        let n = GetClassNameW(h, &mut cls);
-        let class = String::from_utf16_lossy(&cls[..n.max(0) as usize]);
-        if matches!(class.as_str(), "Progman" | "WorkerW" | "Shell_TrayWnd") || IsZoomed(h).as_bool() {
-            return None;
-        }
-        let mut r = RECT::default();
-        GetWindowRect(h, &mut r).ok()?;
-        let mut mi = MONITORINFO { cbSize: std::mem::size_of::<MONITORINFO>() as u32, ..Default::default() };
-        if !GetMonitorInfoW(MonitorFromWindow(h, MONITOR_DEFAULTTONEAREST), &mut mi).as_bool() {
-            return None;
-        }
-        let m = mi.rcMonitor;
-        if r.left <= m.left && r.top <= m.top && r.right >= m.right && r.bottom >= m.bottom {
-            let mut pid = 0u32;
-            GetWindowThreadProcessId(h, Some(&mut pid));
-            Some(exe_name(pid).unwrap_or_else(|| "?".into()))
-        } else {
-            None
-        }
-    }
-}
-
-/// Nome do .exe de um processo, em minúsculo.
-fn exe_name(pid: u32) -> Option<String> {
-    use windows::core::PWSTR;
-    use windows::Win32::Foundation::CloseHandle;
-    use windows::Win32::System::Threading::{
-        OpenProcess, QueryFullProcessImageNameW, PROCESS_NAME_WIN32, PROCESS_QUERY_LIMITED_INFORMATION,
-    };
-    unsafe {
-        let h = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid).ok()?;
-        let mut buf = [0u16; 1024];
-        let mut len = buf.len() as u32;
-        let r = QueryFullProcessImageNameW(h, PROCESS_NAME_WIN32, PWSTR(buf.as_mut_ptr()), &mut len);
-        let _ = CloseHandle(h);
-        r.ok()?;
-        let full = String::from_utf16_lossy(&buf[..len as usize]);
-        full.rsplit('\\').next().map(|n| n.to_lowercase())
-    }
-}
-
-/// Quais apps estão captando o microfone agora? Pergunta ao áudio do Windows (WASAPI):
-/// em cada microfone ativo, pega as sessões de captura "ativas" e o processo de cada uma.
-/// (O registro ConsentStore parou de ser atualizado no Windows 11 recente.)
-fn mic_users() -> Vec<String> {
-    use windows::core::Interface;
-    use windows::Win32::Media::Audio::{
-        eCapture, AudioSessionStateActive, IAudioSessionControl2, IAudioSessionManager2,
-        IMMDeviceEnumerator, MMDeviceEnumerator, DEVICE_STATE_ACTIVE,
-    };
-    use windows::Win32::System::Com::{CoCreateInstance, CoInitializeEx, CLSCTX_ALL, COINIT_MULTITHREADED};
-    let mut out = Vec::new();
-    unsafe {
-        let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
-        let Ok(en) = CoCreateInstance::<_, IMMDeviceEnumerator>(&MMDeviceEnumerator, None, CLSCTX_ALL) else {
-            return out;
-        };
-        let Ok(devs) = en.EnumAudioEndpoints(eCapture, DEVICE_STATE_ACTIVE) else { return out };
-        for i in 0..devs.GetCount().unwrap_or(0) {
-            let Ok(dev) = devs.Item(i) else { continue };
-            let Ok(mgr) = dev.Activate::<IAudioSessionManager2>(CLSCTX_ALL, None) else { continue };
-            let Ok(list) = mgr.GetSessionEnumerator() else { continue };
-            for j in 0..list.GetCount().unwrap_or(0) {
-                let Ok(sess) = list.GetSession(j) else { continue };
-                if !sess.GetState().map(|st| st == AudioSessionStateActive).unwrap_or(false) {
-                    continue;
-                }
-                let Ok(c2) = sess.cast::<IAudioSessionControl2>() else { continue };
-                let pid = c2.GetProcessId().unwrap_or(0);
-                if let Some(n) = (pid != 0).then(|| exe_name(pid)).flatten() {
-                    if !out.contains(&n) {
-                        out.push(n);
-                    }
-                }
-            }
-        }
-    }
-    out.sort();
-    out
 }
 
 /// "22:30" -> minutos desde a meia-noite.
@@ -634,9 +610,10 @@ fn dnd_active(dnd: &Value) -> bool {
         return false;
     }
     let (Some(a), Some(b)) = (hhmm(&dnd["inicio"]), hhmm(&dnd["fim"])) else { return false };
-    let t = unsafe { windows::Win32::System::SystemInformation::GetLocalTime() };
-    let now = t.wHour as u32 * 60 + t.wMinute as u32;
-    let today = t.wDayOfWeek as u64;
+    use chrono::{Datelike, Timelike};
+    let t = chrono::Local::now();
+    let now = t.hour() * 60 + t.minute();
+    let today = t.weekday().num_days_from_sunday() as u64;
     let days: Vec<u64> = dnd["dias"].as_array().map(|d| d.iter().filter_map(|x| x.as_u64()).collect()).unwrap_or_default();
     let (inside, day) = if a == b {
         (false, today)
@@ -654,7 +631,10 @@ fn dnd_active(dnd: &Value) -> bool {
 /// volta 3 s depois que passa. As opções vêm de Shared.hide_opts.
 fn meeting_loop(win: WebviewWindow, shared: Arc<Shared>) {
     let extra_path = config_path(win.app_handle(), "apps-extras.txt");
+    #[cfg(windows)]
     let own = win.hwnd().map(|h| h.0 as isize).unwrap_or(0);
+    #[cfg(not(windows))]
+    let own = 0isize;
     let mut free_since: Option<Instant> = None;
     let mut last_users: Vec<String> = Vec::new();
     loop {
@@ -669,7 +649,7 @@ fn meeting_loop(win: WebviewWindow, shared: Arc<Shared>) {
         if on("extras") {
             wanted.extend(extra_apps(&extra_path));
         }
-        let users = if wanted.is_empty() { Vec::new() } else { mic_users() };
+        let users = if wanted.is_empty() { Vec::new() } else { plat::mic_users(&wanted) };
         if users != last_users {
             if !users.is_empty() {
                 let desc: Vec<String> = users
@@ -685,7 +665,7 @@ fn meeting_loop(win: WebviewWindow, shared: Arc<Shared>) {
             reason = users.iter().find(|u| wanted.contains(u)).map(|u| format!("{u} no microfone"));
         }
         if reason.is_none() && on("telacheia") {
-            reason = fullscreen_app(own).map(|a| format!("{a} em tela cheia"));
+            reason = plat::fullscreen_app(own).map(|a| format!("{a} em tela cheia"));
         }
         let hidden = shared.hidden.load(Ordering::SeqCst);
         let next = if reason.is_some() {
@@ -717,12 +697,28 @@ fn main() {
     };
     let shared = Arc::new(Shared::default());
     let _ = std::fs::remove_file(std::env::temp_dir().join("claude-island.log"));
+    // Wayland não deixa um app escolher a própria posição nem ficar sempre no topo:
+    // no Linux a ilha roda pelo XWayland.
+    #[cfg(all(unix, not(target_os = "macos")))]
+    if std::env::var_os("GDK_BACKEND").is_none() {
+        std::env::set_var("GDK_BACKEND", "x11");
+    }
 
     tauri::Builder::default()
         .manage(shared.clone())
-        .invoke_handler(tauri::generate_handler![decide, set_hit_rect, log, get_anchor, drag_start, drag_end, get_config, set_config, open_extras])
+        .plugin(tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, None))
+        .invoke_handler(tauri::generate_handler![decide, set_hit_rect, log, get_anchor, drag_start, drag_end, get_config, set_config, open_extras, install_hooks])
         .setup(move |app| {
             let win = app.get_webview_window("main").expect("janela main");
+
+            // Mac: sem ícone no Dock, só na barra de menus (como a bandeja do Windows)
+            #[cfg(target_os = "macos")]
+            app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+            #[cfg(not(windows))]
+            {
+                let h = app.handle().clone();
+                thread::spawn(move || first_run_hooks(&h));
+            }
 
             // configurações e escala antes de posicionar
             let cfg = load_cfg(app.handle());
