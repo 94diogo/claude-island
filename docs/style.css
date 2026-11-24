@@ -160,3 +160,14 @@ footer a { color: var(--text-2); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* ---------- downloads por sistema ---------- */
+.platforms { margin-top: 18px; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; max-width: 640px; }
+.platforms a {
+  display: inline-flex; align-items: center; height: 36px; padding: 0 14px; border-radius: 18px;
+  border: 1px solid var(--line); color: var(--text-2); text-decoration: none; font-size: 14px; font-weight: 500;
+  transition: border-color 160ms ease, color 160ms ease, background-color 160ms ease;
+}
+.platforms a:hover { border-color: oklch(1 0 0 / 0.22); color: var(--areia); }
+.platforms a[aria-current="true"] { border-color: oklch(0.70 0.14 42 / 0.55); color: var(--areia); background: oklch(0.70 0.14 42 / 0.10); }
+.final .platforms { margin-top: 16px; }
