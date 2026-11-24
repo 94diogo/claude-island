@@ -4,6 +4,8 @@
 
 Uma pílula sempre no topo do Windows que mostra o que o Claude Code está fazendo: a ferramenta em uso, há quanto tempo, quando ele terminou e quando precisa de você. Pedidos de permissão aparecem na própria ilha, com os botões Permitir e Negar.
 
+**[Site](https://94diogo.github.io/claude-island/)** · **[Baixar para Windows](../../releases/latest)**
+
 <p align="center"><img src="brand/estados.png" alt="Três estados da ilha: trabalhando, aberta com duas sessões e o uso do plano, e pedindo permissão para rodar git push" width="100%"></p>
 
 ## O que ela faz
