@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claude Island: o Claude Code no topo do Windows</title>
+<meta name="description" content="Uma pílula sempre no topo do Windows que mostra o que o Claude Code está fazendo e deixa você aprovar permissões sem abrir o terminal. Grátis e de código aberto.">
+<meta property="og:title" content="Claude Island">
+<meta property="og:description" content="O Claude Code no topo do Windows: ferramenta em uso, tempo, várias sessões e permissões com um clique.">
+<meta property="og:image" content="https://94diogo.github.io/claude-island/assets/banner.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#1C1916">
+<link rel="icon" href="assets/logo-icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- a ilha de verdade, em loop pelos estados -->
+<div class="island" id="island" data-state="idle" aria-hidden="true">
+  <div class="layer l-idle"><span class="dot"></span></div>
+  <div class="layer l-working">
+    <svg class="glyph spin" viewBox="0 0 16 16"><use href="#asterisk"/></svg>
+    <span class="label"><b>Bash</b>cargo tauri build</span>
+    <span class="bars"><i></i><i></i><i></i></span>
+    <span class="time" data-timer>00:00</span>
+  </div>
+  <div class="layer l-permission">
+    <div class="perm-head"><span class="ring"><svg class="glyph" viewBox="0 0 16 16"><use href="#asterisk"/></svg></span>Quer rodar um comando<span class="where">claude-island</span></div>
+    <div class="cmd"><span>$</span>git push origin main</div>
+    <div class="actions"><span class="btn ghost">Negar</span><span class="btn main" data-allow>Permitir</span></div>
+  </div>
+  <div class="layer l-done">
+    <svg class="check" viewBox="0 0 16 16"><path d="M3 8.5 6.5 12 13 4.5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span class="label">Pronto</span>
+    <span class="time">1m 42s</span>
+  </div>
+</div>
+
+<main>
+  <section class="hero">
+    <img class="mark" src="assets/logo-symbol.svg" alt="" width="88" height="88">
+    <h1>O Claude Code no topo da tela.</h1>
+    <p class="sub">Claude Island é uma pílula sempre no topo do Windows. Ela mostra a ferramenta que o Claude está usando, há quanto tempo, e os pedidos de permissão, que você aprova ali mesmo.</p>
+    <a class="cta" href="https://github.com/94diogo/claude-island/releases/latest">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v8.5M4.5 7 8 10.5 11.5 7M3 13.5h10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Baixar para Windows
+    </a>
+    <p class="proof">Grátis · código aberto (MIT) · 1,2 MB · Windows 10 e 11</p>
+  </section>
+
+  <figure class="shot">
+    <img src="assets/estados.png" alt="Três estados da ilha: trabalhando com Bash, aberta com duas sessões e o uso do plano, e pedindo permissão para rodar git push" width="1560" height="520" loading="lazy">
+  </figure>
+
+  <section class="benefits" aria-labelledby="b-title">
+    <h2 id="b-title" class="kicker">O que muda no dia a dia</h2>
+    <div class="grid">
+      <article>
+        <h3>Aprova sem trocar de janela</h3>
+        <p>O pedido de permissão aparece na ilha com Permitir e Negar. Se você não clicar em 30 segundos, ele volta para o terminal como sempre.</p>
+      </article>
+      <article>
+        <h3>Várias sessões de uma vez</h3>
+        <p>Com dois ou mais projetos rodando, a pílula mostra quantos são. Aberta, mostra uma linha por projeto com a ferramenta e o tempo de cada um.</p>
+      </article>
+      <article>
+        <h3>Sai da frente quando precisa</h3>
+        <p>Some durante chamadas no Meet, Teams, Zoom ou WhatsApp, em jogo ou vídeo em tela cheia e no horário de não perturbe que você marcar.</p>
+      </article>
+      <article>
+        <h3>O limite do plano à vista</h3>
+        <p>Passe o mouse e veja quanto já usou da janela de 5 horas e da semana, e a hora em que cada uma zera.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="steps" aria-labelledby="s-title">
+    <h2 id="s-title" class="kicker">Como instalar</h2>
+    <ol>
+      <li><span>1</span><div><h3>Baixe e rode o instalador</h3><p>Ele liga os hooks no seu <code>~/.claude/settings.json</code> e guarda um backup antes.</p></div></li>
+      <li><span>2</span><div><h3>Reinicie o Claude Code</h3><p>Sessões que já estavam abertas só mandam eventos depois de reiniciadas.</p></div></li>
+      <li><span>3</span><div><h3>Trabalhe como sempre</h3><p>Arraste a ilha para qualquer canto ou para o meio de uma lateral. Clique no ícone da bandeja para configurar.</p></div></li>
+    </ol>
+  </section>
+
+  <section class="faq" aria-labelledby="f-title">
+    <h2 id="f-title" class="kicker">Perguntas</h2>
+    <details><summary>O que eu preciso ter instalado?</summary><p>Windows 10 ou 11, o Claude Code e o Node.js no PATH. O Node roda os dois scripts que conversam com a ilha.</p></details>
+    <details><summary>Ela mexe nas minhas configurações do Claude Code?</summary><p>Adiciona os hooks no <code>~/.claude/settings.json</code> e, se você não tiver nenhuma, uma statusline que manda o uso do plano. Faz backup antes. Desinstalar pelo Windows tira os dois.</p></details>
+    <details><summary>Funciona no app Claude, além do terminal?</summary><p>Funciona em qualquer sessão do Claude Code que leia o <code>~/.claude/settings.json</code>: no terminal e na aba Code do app Claude para Windows.</p></details>
+    <details><summary>É seguro deixar um servidor rodando?</summary><p>O servidor escuta só em <code>127.0.0.1</code>, aceita apenas JSON e recusa pedidos vindos do navegador. O código está aberto no GitHub para quem quiser conferir.</p></details>
+    <details><summary>Por que o Windows avisa na hora de instalar?</summary><p>O instalador não tem assinatura digital, então o SmartScreen pergunta antes. Clique em "Mais informações" e depois em "Executar assim mesmo".</p></details>
+    <details><summary>O uso do plano aparece para todo mundo?</summary><p>Só para os planos Pro, Max e Ultra, e depois da primeira resposta de cada sessão. É o Claude Code que entrega esses números.</p></details>
+    <details><summary>É um produto da Anthropic?</summary><p>Não. É um projeto pessoal, sem ligação com a Anthropic. "Claude" e "Claude Code" são marcas da Anthropic.</p></details>
+  </section>
+
+  <section class="final">
+    <img src="assets/logo-symbol.svg" alt="" width="64" height="64">
+    <h2>Deixe o Claude trabalhar e acompanhe pelo canto do olho.</h2>
+    <a class="cta" href="https://github.com/94diogo/claude-island/releases/latest">Baixar para Windows</a>
+    <p class="proof"><a href="https://github.com/94diogo/claude-island">Código no GitHub</a> · <a href="https://github.com/94diogo/claude-island/blob/main/CHANGELOG.md">O que há de novo</a></p>
+  </section>
+</main>
+
+<footer>Feito por <a href="https://github.com/94diogo">94diogo</a> · licença MIT</footer>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="asterisk" viewBox="0 0 16 16"><g stroke="currentColor" stroke-width="1.7" stroke-linecap="round" fill="none"><path d="M8 1.5v4M8 10.5v4M1.5 8h4M10.5 8h4M3.4 3.4l2.8 2.8M9.8 9.8l2.8 2.8M12.6 3.4 9.8 6.2M6.2 9.8l-2.8 2.8"/></g></symbol>
+</svg>
+<script src="app.js"></script>
+</body>
+</html>
