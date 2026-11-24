@@ -21,7 +21,7 @@ Uma pílula sempre no topo do Windows que mostra o que o Claude Code está fazen
 
 Precisa de Windows 10 ou 11, [Claude Code](https://code.claude.com/docs) e [Node.js](https://nodejs.org) no PATH.
 
-1. Baixe o `Claude Island_x.y.z_x64-setup.exe` em [Releases](../../releases/latest) e rode.
+1. Baixe o `Claude.Island_x.y.z_x64-setup.exe` em [Releases](../../releases/latest) e rode. Como o instalador não tem assinatura digital, o Windows pode mostrar o aviso do SmartScreen: clique em "Mais informações" e depois em "Executar assim mesmo".
 2. O instalador liga os hooks no `~/.claude/settings.json` (faz backup antes) e, se você não tiver nenhuma, a statusline que manda o uso do plano.
 3. Reinicie as sessões do Claude Code que já estavam abertas.
 
