@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Claude Island: o Claude Code no topo do Windows</title>
-<meta name="description" content="Uma pílula sempre no topo do Windows que mostra o que o Claude Code está fazendo e deixa você aprovar permissões sem abrir o terminal. Grátis e de código aberto.">
+<title>Claude Island: o Claude Code no topo da tela</title>
+<meta name="description" content="Uma pílula sempre no topo da tela que mostra o que o Claude Code está fazendo e deixa você aprovar permissões sem abrir o terminal. Para Windows, Mac e Linux, grátis e de código aberto.">
 <meta property="og:title" content="Claude Island">
-<meta property="og:description" content="O Claude Code no topo do Windows: ferramenta em uso, tempo, várias sessões e permissões com um clique.">
+<meta property="og:description" content="O Claude Code no topo da tela: ferramenta em uso, tempo, várias sessões e permissões com um clique.">
 <meta property="og:image" content="https://94diogo.github.io/claude-island/assets/banner.png">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
@@ -44,12 +44,12 @@
   <section class="hero">
     <img class="mark" src="assets/logo-symbol.svg" alt="" width="88" height="88">
     <h1>O Claude Code no topo da tela.</h1>
-    <p class="sub">Claude Island é uma pílula sempre no topo do Windows. Ela mostra a ferramenta que o Claude está usando, há quanto tempo, e os pedidos de permissão, que você aprova ali mesmo.</p>
+    <p class="sub">Claude Island é uma pílula sempre no topo da tela, no Windows, no Mac e no Linux. Ela mostra a ferramenta que o Claude está usando, há quanto tempo, e os pedidos de permissão, que você aprova ali mesmo.</p>
     <a class="cta" href="https://github.com/94diogo/claude-island/releases/latest">
       <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v8.5M4.5 7 8 10.5 11.5 7M3 13.5h10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      Baixar para Windows
+      Baixar grátis
     </a>
-    <p class="proof">Grátis · código aberto (MIT) · 1,2 MB · Windows 10 e 11</p>
+    <p class="proof">Windows 10 e 11 · macOS 11+ · Linux (.deb e AppImage) · código aberto (MIT)</p>
   </section>
 
   <figure class="shot">
@@ -81,7 +81,7 @@
   <section class="steps" aria-labelledby="s-title">
     <h2 id="s-title" class="kicker">Como instalar</h2>
     <ol>
-      <li><span>1</span><div><h3>Baixe e rode o instalador</h3><p>Ele liga os hooks no seu <code>~/.claude/settings.json</code> e guarda um backup antes.</p></div></li>
+      <li><span>1</span><div><h3>Baixe e rode o instalador</h3><p>No Windows, o instalador liga os hooks no seu <code>~/.claude/settings.json</code> e guarda um backup antes. No Mac e no Linux, o app faz isso na primeira vez que abre.</p></div></li>
       <li><span>2</span><div><h3>Reinicie o Claude Code</h3><p>Sessões que já estavam abertas só mandam eventos depois de reiniciadas.</p></div></li>
       <li><span>3</span><div><h3>Trabalhe como sempre</h3><p>Arraste a ilha para qualquer canto ou para o meio de uma lateral. Clique no ícone da bandeja para configurar.</p></div></li>
     </ol>
@@ -89,11 +89,12 @@
 
   <section class="faq" aria-labelledby="f-title">
     <h2 id="f-title" class="kicker">Perguntas</h2>
-    <details><summary>O que eu preciso ter instalado?</summary><p>Windows 10 ou 11, o Claude Code e o Node.js no PATH. O Node roda os dois scripts que conversam com a ilha.</p></details>
+    <details><summary>O que eu preciso ter instalado?</summary><p>Windows 10 ou 11, macOS 11 ou mais novo, ou Linux com X11 (ou XWayland), além do Claude Code e do Node.js. O Node roda os dois scripts que conversam com a ilha.</p></details>
     <details><summary>Ela mexe nas minhas configurações do Claude Code?</summary><p>Adiciona os hooks no <code>~/.claude/settings.json</code> e, se você não tiver nenhuma, uma statusline que manda o uso do plano. Faz backup antes. Desinstalar pelo Windows tira os dois.</p></details>
-    <details><summary>Funciona no app Claude, além do terminal?</summary><p>Funciona em qualquer sessão do Claude Code que leia o <code>~/.claude/settings.json</code>: no terminal e na aba Code do app Claude para Windows.</p></details>
+    <details><summary>Funciona no app Claude, além do terminal?</summary><p>Funciona em qualquer sessão do Claude Code que leia o <code>~/.claude/settings.json</code>: no terminal e na aba Code do app Claude.</p></details>
     <details><summary>É seguro deixar um servidor rodando?</summary><p>O servidor escuta só em <code>127.0.0.1</code>, aceita apenas JSON e recusa pedidos vindos do navegador. O código está aberto no GitHub para quem quiser conferir.</p></details>
-    <details><summary>Por que o Windows avisa na hora de instalar?</summary><p>O instalador não tem assinatura digital, então o SmartScreen pergunta antes. Clique em "Mais informações" e depois em "Executar assim mesmo".</p></details>
+    <details><summary>Por que o sistema avisa na hora de instalar?</summary><p>Os instaladores não têm assinatura digital. No Windows, clique em "Mais informações" e depois em "Executar assim mesmo". No Mac, clique com o botão direito no app e escolha "Abrir".</p></details>
+    <details><summary>Funciona igual nos três sistemas?</summary><p>Quase. No Mac a ilha não sabe qual app usa o microfone: ela some quando o microfone está em uso e um app marcado está aberto, e ainda não detecta tela cheia. No Linux ela precisa do X11 ou do XWayland. O autor testa no Windows; Mac e Linux são compilados pelo GitHub Actions.</p></details>
     <details><summary>O uso do plano aparece para todo mundo?</summary><p>Só para os planos Pro, Max e Ultra, e depois da primeira resposta de cada sessão. É o Claude Code que entrega esses números.</p></details>
     <details><summary>É um produto da Anthropic?</summary><p>Não. É um projeto pessoal, sem ligação com a Anthropic. "Claude" e "Claude Code" são marcas da Anthropic.</p></details>
   </section>
@@ -101,7 +102,7 @@
   <section class="final">
     <img src="assets/logo-symbol.svg" alt="" width="64" height="64">
     <h2>Deixe o Claude trabalhar e acompanhe pelo canto do olho.</h2>
-    <a class="cta" href="https://github.com/94diogo/claude-island/releases/latest">Baixar para Windows</a>
+    <a class="cta" href="https://github.com/94diogo/claude-island/releases/latest">Baixar grátis</a>
     <p class="proof"><a href="https://github.com/94diogo/claude-island">Código no GitHub</a> · <a href="https://github.com/94diogo/claude-island/blob/main/CHANGELOG.md">O que há de novo</a></p>
   </section>
 </main>

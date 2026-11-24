@@ -1,10 +1,10 @@
-<p align="center"><img src="brand/banner.png" alt="Claude Island: uma ilha no topo do Windows que mostra o que o Claude Code está fazendo" width="100%"></p>
+<p align="center"><img src="brand/banner.png" alt="Claude Island: uma ilha no topo da tela que mostra o que o Claude Code está fazendo" width="100%"></p>
 
 # Claude Island
 
-Uma pílula sempre no topo do Windows que mostra o que o Claude Code está fazendo: a ferramenta em uso, há quanto tempo, quando ele terminou e quando precisa de você. Pedidos de permissão aparecem na própria ilha, com os botões Permitir e Negar.
+Uma pílula sempre no topo da tela, no Windows, no Mac e no Linux, que mostra o que o Claude Code está fazendo: a ferramenta em uso, há quanto tempo, quando ele terminou e quando precisa de você. Pedidos de permissão aparecem na própria ilha, com os botões Permitir e Negar.
 
-**[Site](https://94diogo.github.io/claude-island/)** · **[Baixar para Windows](../../releases/latest)**
+**[Site](https://94diogo.github.io/claude-island/)** · **[Baixar](../../releases/latest)**
 
 <p align="center"><img src="brand/estados.png" alt="Três estados da ilha: trabalhando, aberta com duas sessões e o uso do plano, e pedindo permissão para rodar git push" width="100%"></p>
 
@@ -21,31 +21,51 @@ Uma pílula sempre no topo do Windows que mostra o que o Claude Code está fazen
 
 ## Instalar
 
-Precisa de Windows 10 ou 11, [Claude Code](https://code.claude.com/docs) e [Node.js](https://nodejs.org) no PATH.
+Em qualquer sistema você precisa do [Claude Code](https://code.claude.com/docs) e do [Node.js](https://nodejs.org). Os instaladores ficam em [Releases](../../releases/latest). Nenhum deles tem assinatura digital, então o sistema pede uma confirmação na primeira vez.
 
-1. Baixe o `Claude.Island_x.y.z_x64-setup.exe` em [Releases](../../releases/latest) e rode. Como o instalador não tem assinatura digital, o Windows pode mostrar o aviso do SmartScreen: clique em "Mais informações" e depois em "Executar assim mesmo".
-2. O instalador liga os hooks no `~/.claude/settings.json` (faz backup antes) e, se você não tiver nenhuma, a statusline que manda o uso do plano.
-3. Reinicie as sessões do Claude Code que já estavam abertas.
+### Windows 10 e 11
 
-Para a ilha abrir junto com o Windows, baixe o [`autostart.ps1`](autostart.ps1) deste repositório e rode:
+1. Baixe o `Claude.Island_x.y.z_x64-setup.exe` e rode. Se aparecer o aviso do SmartScreen, clique em "Mais informações" e depois em "Executar assim mesmo".
+2. O instalador liga os hooks no `~/.claude/settings.json` (faz backup antes) e, se você não tiver nenhuma, a statusline que manda o uso do plano. Desinstalar pelo Windows tira os dois.
 
-```powershell
-powershell -File autostart.ps1          # cria a tarefa "Claude Island" no Agendador
-powershell -File autostart.ps1 -Remove  # remove
-```
+### Mac (macOS 11 ou mais novo)
 
-Desinstalar pelo Windows tira os hooks e a statusline que o instalador colocou.
+1. Baixe o `.dmg` do seu Mac: `aarch64` para Apple Silicon (M1 em diante), `x64` para Intel. Arraste o app para Aplicativos.
+2. Na primeira vez, clique com o botão direito no app e escolha "Abrir". Se o macOS disser que o app está danificado, rode no Terminal:
+   ```bash
+   xattr -dr com.apple.quarantine "/Applications/Claude Island.app"
+   ```
+3. Na primeira abertura o app liga os hooks sozinho. A ilha fica na barra de menus, sem ícone no Dock.
+
+### Linux
+
+1. Baixe o `.deb` (Debian, Ubuntu e derivados) e instale com `sudo apt install ./Claude.Island_x.y.z_amd64.deb`, ou baixe o `.AppImage`, dê `chmod +x` e rode.
+2. Na primeira abertura o app liga os hooks sozinho.
+3. A ilha usa o X11 (no Wayland ela roda pelo XWayland) e um compositor para a transparência. O ícone da bandeja precisa de suporte a AppIndicator no seu painel.
+
+Depois de instalar, em qualquer sistema, reinicie as sessões do Claude Code que já estavam abertas. Para a ilha abrir junto com o sistema, ligue "Abrir com o sistema" nas configurações.
+
+### O que muda de um sistema para outro
+
+| | Windows | Mac | Linux |
+|---|---|---|---|
+| Saber qual app usa o microfone | sim (WASAPI) | não: some se o microfone estiver em uso e um app marcado estiver aberto | sim (`pactl`, PipeWire ou PulseAudio) |
+| Esconder em tela cheia | sim | ainda não | sim, no X11 (`xprop`) |
+| Clique esquerdo no ícone abre as configurações | sim | sim | não: use o menu do ícone |
+
+Os builds de Mac e Linux saem do GitHub Actions a cada versão. O autor testa no Windows; se algo não funcionar no seu sistema, abra uma issue com o arquivo `claude-island.log` da pasta temporária.
 
 ## Configurar
 
-Clique no ícone da ilha na bandeja. A janela tem quatro partes, e tudo vale na hora:
+Clique no ícone da ilha na bandeja (no Mac, na barra de menus). A janela tem cinco partes, e tudo vale na hora:
 
-- "Esconder a ilha quando" tem um interruptor para cada app de chamada, para o Discord, para tela cheia e para uma lista extra de `.exe`.
+- "Esconder a ilha quando" tem um interruptor para cada app de chamada, para o Discord, para tela cheia e para uma lista extra de apps.
 - "Não perturbe" recebe o horário e os dias da semana.
 - "Aparência" muda a opacidade, o tamanho (de 80% a 140%) e liga o modo compacto.
+- "Sistema" liga o "Abrir com o sistema" e tem um botão para ligar os hooks do Claude Code de novo.
 - "Uso do plano" liga ou desliga os números na ilha e mostra os valores atuais.
 
-As escolhas ficam em `%APPDATA%\dev.local.claude-island\config.json`. "Voltar ao topo", no menu do botão direito, põe a ilha de volta no topo central.
+As escolhas ficam em `config.json`, na pasta de configuração do app (`%APPDATA%\dev.local.claude-island` no Windows, `~/Library/Application Support/dev.local.claude-island` no Mac, `~/.config/dev.local.claude-island` no Linux). "Voltar ao topo", no menu do botão direito, põe a ilha de volta no topo central.
 
 ## Como funciona
 
@@ -66,7 +86,7 @@ Quatro escolhas que não aparecem só lendo o código:
 - O instalador copia os scripts para `~/.claude/hooks/` e os hooks chamam essa cópia, então mudar a pasta do projeto de lugar não quebra nada.
 - Comandos rodados de dentro do app Claude para Windows (pacote MSIX) têm o `AppData` redirecionado, e a ilha instalada por lá não aparece no logon. Instale com dois cliques no setup ou por uma tarefa do Agendador.
 
-Diagnóstico: `%TEMP%\claude-island.log`, zerado a cada abertura.
+Diagnóstico: `claude-island.log` na pasta temporária (`%TEMP%` no Windows, `$TMPDIR` no Mac, `/tmp` no Linux), zerado a cada abertura.
 
 ## Compilar
 

@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.9.0] - 2026-11-24
+
+### Adicionado
+- Versões para Mac (Apple Silicon e Intel) e Linux (.deb e AppImage), compiladas pelo GitHub Actions.
+- No Linux, quem usa o microfone vem do `pactl` (PipeWire ou PulseAudio) e a tela cheia vem do `xprop`. No Mac, a ilha some quando o microfone está em uso e um app marcado está aberto.
+- "Abrir com o sistema" nas configurações, nos três sistemas.
+- Botão "Ligar os hooks do Claude Code de novo" nas configurações. No Mac e no Linux o app liga os hooks na primeira abertura.
+
+### Mudado
+- A lista de apps compara nomes sem ".exe", com as variantes de Windows, Mac e Linux. A lista extra aceita os dois jeitos.
+
 ## [0.8.0] - 2026-11-24
 
 Primeira versão pública.
