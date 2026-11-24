@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claude Island</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="settings.css">
+</head>
+<body>
+<header class="top">
+  <svg class="mark" viewBox="0 0 16 16" aria-hidden="true"><g stroke="currentColor" stroke-width="1.7" stroke-linecap="round" fill="none"><path d="M8 1.5v4M8 10.5v4M1.5 8h4M10.5 8h4M3.4 3.4l2.8 2.8M9.8 9.8l2.8 2.8M12.6 3.4 9.8 6.2M6.2 9.8l-2.8 2.8"/></g></svg>
+  <h1>Configurações</h1>
+  <span class="saved" data-saved aria-live="polite"></span>
+</header>
+
+<main>
+  <section>
+    <h2>Esconder a ilha quando</h2>
+    <p class="hint">A ilha some e volta 3 s depois. App no microfone conta como reunião ou chamada.</p>
+    <div class="list" data-groups></div>
+    <button class="link" data-extras type="button">Editar lista extra…</button>
+  </section>
+
+  <section>
+    <h2>Não perturbe</h2>
+    <label class="row">
+      <span>Esconder em um horário</span>
+      <input type="checkbox" class="switch" data-k="dnd.ligado">
+    </label>
+    <div class="dnd" data-dnd>
+      <div class="times">
+        <label>Das <input type="time" data-k="dnd.inicio"></label>
+        <label>às <input type="time" data-k="dnd.fim"></label>
+      </div>
+      <div class="days" data-days role="group" aria-label="Dias"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Aparência</h2>
+    <label class="row slider">
+      <span>Opacidade</span>
+      <input type="range" min="30" max="100" step="5" data-k="aparencia.opacidade" data-pct>
+      <output data-out="aparencia.opacidade"></output>
+    </label>
+    <p class="hint">Com o mouse em cima ela fica opaca.</p>
+    <label class="row slider">
+      <span>Tamanho</span>
+      <input type="range" min="80" max="140" step="5" data-k="aparencia.escala" data-pct>
+      <output data-out="aparencia.escala"></output>
+    </label>
+    <label class="row">
+      <span>Modo compacto<small>Pílula menor, sem o nome da ferramenta</small></span>
+      <input type="checkbox" class="switch" data-k="aparencia.compacto">
+    </label>
+  </section>
+
+  <section>
+    <h2>Uso do plano</h2>
+    <label class="row">
+      <span>Mostrar na ilha<small>Na ilha aberta e ao passar o mouse com ela parada</small></span>
+      <input type="checkbox" class="switch" data-k="uso.mostrar">
+    </label>
+    <div class="usage" data-usage></div>
+  </section>
+</main>
+
+<script src="settings.js"></script>
+</body>
+</html>

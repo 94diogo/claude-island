@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --noite: #1C1916; --areia: #F2E8D8; --brasa: #E0825E; --laguna: #3E9C9A;
+    --text-3: oklch(0.62 0.01 80);
+  }
+  * { margin: 0; box-sizing: border-box; }
+  html, body { width: 1280px; height: 640px; background: var(--noite); }
+  body {
+    font-family: "Geist", system-ui, sans-serif; color: var(--areia);
+    display: grid; grid-template-columns: 300px 1fr; align-items: center;
+    padding: 0 96px; gap: 56px; position: relative; overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+  /* brilho do sol atrás do símbolo */
+  body::before {
+    content: ""; position: absolute; left: 40px; top: 90px; width: 420px; height: 420px; border-radius: 50%;
+    background: radial-gradient(closest-side, oklch(0.70 0.14 42 / 0.20), transparent);
+  }
+  .mark { width: 300px; height: 300px; position: relative; }
+  h1 { font-size: 92px; font-weight: 600; letter-spacing: -0.045em; line-height: 0.95; }
+  p { margin-top: 22px; font-size: 30px; color: oklch(0.80 0.01 80); letter-spacing: -0.015em; max-width: 640px; line-height: 1.3; }
+  .pill {
+    margin-top: 40px; display: inline-flex; align-items: center; gap: 14px;
+    height: 54px; padding: 0 22px 0 18px; border-radius: 27px;
+    background: oklch(0.13 0.006 60); box-shadow: 0 0 0 1px oklch(1 0 0 / 0.08) inset, 0 18px 40px -16px #000;
+    font-size: 20px; font-weight: 500;
+  }
+  .pill svg { width: 22px; height: 22px; color: var(--brasa); }
+  .pill b { font-weight: 500; color: var(--text-3); margin-right: 9px; }
+  .pill .bars { display: flex; gap: 3px; height: 16px; align-items: center; margin-left: 18px; }
+  .pill .bars i { width: 3px; border-radius: 2px; background: var(--brasa); }
+  .pill .t { font-family: "Geist Mono", monospace; font-size: 17px; color: var(--text-3); }
+</style>
+</head>
+<body>
+  <svg class="mark" viewBox="0 0 256 256" aria-hidden="true"><path fill="#E0825E" d="M72 120A56 56 0 0 1 184 120Z"/><rect x="40" y="112" width="176" height="44" rx="22" fill="#F2E8D8"/><rect x="72" y="172" width="112" height="14" rx="7" fill="#3E9C9A"/></svg>
+  <div>
+    <h1>Claude Island</h1>
+    <p>Uma ilha no topo do Windows que mostra o que o Claude Code está fazendo.</p>
+    <div class="pill">
+      <svg viewBox="0 0 16 16"><g stroke="currentColor" stroke-width="1.7" stroke-linecap="round" fill="none"><path d="M8 1.5v4M8 10.5v4M1.5 8h4M10.5 8h4M3.4 3.4l2.8 2.8M9.8 9.8l2.8 2.8M12.6 3.4 9.8 6.2M6.2 9.8l-2.8 2.8"/></g></svg>
+      <span><b>Bash</b>cargo tauri build</span>
+      <span class="bars"><i style="height:7px"></i><i style="height:16px"></i><i style="height:10px"></i></span>
+      <span class="t">01:42</span>
+    </div>
+  </div>
+</body>
+</html>

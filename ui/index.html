@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claude Island</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="island.css">
+</head>
+<body>
+<div class="island" id="island" data-state="idle" aria-live="polite">
+
+  <div class="layer l-idle"><span class="dot"></span></div>
+
+  <div class="layer l-working">
+    <div class="row">
+      <svg class="glyph spin" viewBox="0 0 16 16" aria-hidden="true"><use href="#asterisk"/></svg>
+      <span class="label" data-tool-label></span>
+      <span class="count" data-count hidden></span>
+      <span class="bars" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span class="time" data-timer>00:00</span>
+    </div>
+  </div>
+
+  <div class="layer l-expanded">
+    <div class="row">
+      <svg class="glyph spin" viewBox="0 0 16 16" aria-hidden="true"><use href="#asterisk"/></svg>
+      <span class="label" data-tool-label></span>
+      <span class="time" data-timer>00:00</span>
+    </div>
+    <div class="meta" data-meta></div>
+    <ul class="steps" data-steps></ul>
+    <ul class="sess" data-sess></ul>
+    <div class="usage" data-usage hidden></div>
+  </div>
+
+  <div class="layer l-permission">
+    <div class="perm-head">
+      <span class="ring"><svg class="glyph" viewBox="0 0 16 16" aria-hidden="true"><use href="#asterisk"/></svg></span>
+      <span data-perm-title>Quer rodar um comando</span>
+      <span class="where" data-perm-where></span>
+    </div>
+    <div class="cmd" data-perm-cmd></div>
+    <div class="actions">
+      <button class="btn btn-ghost" data-deny>Negar</button>
+      <button class="btn btn-main" data-allow>Permitir</button>
+    </div>
+  </div>
+
+  <div class="layer l-notice">
+    <div class="row">
+      <span class="ping" aria-hidden="true"></span>
+      <span class="label" data-notice>Esperando você</span>
+      <span class="time" data-notice-where></span>
+    </div>
+  </div>
+
+  <div class="layer l-task">
+    <div class="row">
+      <span class="task-icon" data-task-icon aria-hidden="true"></span>
+      <span class="label"><b data-task-kicker>Tarefa iniciada</b><span data-task-title></span></span>
+      <span class="time" data-task-meta></span>
+    </div>
+  </div>
+
+  <div class="layer l-info">
+    <div class="row">
+      <svg class="glyph" viewBox="0 0 16 16" aria-hidden="true"><use href="#asterisk"/></svg>
+      <span class="label" data-info></span>
+      <span class="time" data-info-reset></span>
+    </div>
+  </div>
+
+  <div class="layer l-done">
+    <div class="row">
+      <svg class="check" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5 6.5 12 13 4.5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span class="label">Pronto</span>
+      <span class="time" data-done-time></span>
+    </div>
+  </div>
+</div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="asterisk" viewBox="0 0 16 16"><g stroke="currentColor" stroke-width="1.7" stroke-linecap="round" fill="none"><path d="M8 1.5v4M8 10.5v4M1.5 8h4M10.5 8h4M3.4 3.4l2.8 2.8M9.8 9.8l2.8 2.8M12.6 3.4 9.8 6.2M6.2 9.8l-2.8 2.8"/></g></symbol>
+</svg>
+
+<script src="island.js"></script>
+</body>
+</html>

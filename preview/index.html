@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claude Island</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: oklch(0.19 0.012 60);
+    --bg-2: oklch(0.24 0.018 50);
+    --island: oklch(0.13 0.006 60);
+    --island-line: oklch(1 0 0 / 0.07);
+    --text: oklch(0.96 0.008 80);
+    --text-2: oklch(0.78 0.01 80);
+    --text-3: oklch(0.58 0.01 80);
+    --accent: oklch(0.70 0.14 42);
+    --accent-soft: oklch(0.70 0.14 42 / 0.16);
+    --ok: oklch(0.82 0.12 158);
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --font: "Geist", system-ui, sans-serif;
+    --mono: "Geist Mono", ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: var(--font);
+    color: var(--text);
+    background:
+      radial-gradient(120% 80% at 50% -10%, oklch(0.30 0.05 45 / 0.55), transparent 60%),
+      radial-gradient(90% 70% at 100% 110%, oklch(0.26 0.04 250 / 0.5), transparent 60%),
+      var(--bg);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* ---------- "desktop" ---------- */
+  .desk {
+    position: relative;
+    min-height: 100%;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+  }
+  .topline {
+    height: 44px;
+    display: flex;
+    justify-content: center;
+    position: relative;
+    z-index: 2;
+  }
+
+  /* ---------- island ---------- */
+  .island {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    width: 128px;
+    height: 34px;
+    border-radius: 17px;
+    transform: translateX(-50%);
+    background: var(--island);
+    box-shadow:
+      0 0 0 1px var(--island-line) inset,
+      0 10px 30px -8px oklch(0 0 0 / 0.6),
+      0 2px 6px oklch(0 0 0 / 0.35);
+    overflow: hidden;
+    cursor: default;
+    user-select: none;
+    will-change: width, height;
+  }
+  .island::after { /* faint top highlight: gives volume */
+    content: "";
+    position: absolute; inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(to bottom, oklch(1 0 0 / 0.05), transparent 40%);
+    pointer-events: none;
+  }
+
+  .layer {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    filter: blur(6px);
+    transform: scale(0.96);
+    pointer-events: none;
+    transition:
+      opacity 200ms var(--ease-out),
+      filter 200ms var(--ease-out),
+      transform 260ms var(--ease-out);
+  }
+  .island[data-state="idle"] .l-idle,
+  .island[data-state="working"] .l-working,
+  .island[data-state="expanded"] .l-expanded,
+  .island[data-state="permission"] .l-permission,
+  .island[data-state="done"] .l-done {
+    opacity: 1; filter: blur(0); transform: scale(1);
+    pointer-events: auto;
+    transition-delay: 70ms; /* deixa a forma crescer antes do conteúdo */
+  }
+
+  /* glyph */
+  .glyph { width: 16px; height: 16px; flex: none; color: var(--accent); }
+  .glyph.spin { animation: spin 2.4s linear infinite; }
+  .glyph.dim { color: var(--text-3); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* idle */
+  .l-idle { display: grid; place-items: center; }
+  .l-idle .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--text-3);
+  }
+
+  /* compact row (working / done) */
+  .row {
+    height: 38px;
+    padding: 0 14px 0 12px;
+    display: flex; align-items: center; gap: 10px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  .row .label { color: var(--text); font-weight: 500; letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; }
+  .row .label b { font-weight: 500; color: var(--text-3); margin-right: 6px; }
+  .row .time { margin-left: auto; font-family: var(--mono); font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+
+  .bars { display: flex; gap: 2px; align-items: center; height: 12px; margin-left: auto; }
+  .bars i {
+    width: 2px; height: 100%; border-radius: 1px; background: var(--accent);
+    transform-origin: center; animation: bar 900ms ease-in-out infinite;
+  }
+  .bars i:nth-child(2) { animation-delay: -300ms; }
+  .bars i:nth-child(3) { animation-delay: -600ms; }
+  .bars + .time { margin-left: 2px; }
+  @keyframes bar { 0%,100% { transform: scaleY(0.35); } 50% { transform: scaleY(1); } }
+
+  /* expanded */
+  .l-expanded .row { padding-top: 4px; height: 44px; }
+  .meta { padding: 0 16px; font-size: 11.5px; color: var(--text-3); font-family: var(--mono); margin-top: -4px; }
+  .steps { list-style: none; padding: 10px 16px 0; display: grid; gap: 7px; }
+  .steps li {
+    display: grid; grid-template-columns: 14px 52px 1fr; gap: 8px; align-items: center;
+    font-size: 12.5px; color: var(--text-2);
+    opacity: 0; transform: translateY(6px);
+  }
+  .island[data-state="expanded"] .steps li {
+    opacity: 1; transform: none;
+    transition: opacity 240ms var(--ease-out), transform 300ms var(--ease-out);
+  }
+  .island[data-state="expanded"] .steps li:nth-child(1) { transition-delay: 110ms; }
+  .island[data-state="expanded"] .steps li:nth-child(2) { transition-delay: 150ms; }
+  .island[data-state="expanded"] .steps li:nth-child(3) { transition-delay: 190ms; }
+  .steps .tool { font-family: var(--mono); font-size: 11.5px; color: var(--text-3); }
+  .steps .st-ok { color: var(--ok); font-size: 12px; }
+  .steps .st-run { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); justify-self: center; animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: 0.35; } }
+
+  /* permission */
+  .l-permission { padding: 14px 16px 14px; display: flex; flex-direction: column; gap: 10px; }
+  .perm-head { display: flex; align-items: center; gap: 10px; font-size: 13.5px; font-weight: 600; letter-spacing: -0.01em; }
+  .perm-head .where { margin-left: auto; font-weight: 400; font-size: 11.5px; color: var(--text-3); font-family: var(--mono); }
+  .ring { position: relative; width: 16px; height: 16px; display: grid; place-items: center; }
+  .ring::before { content: ""; position: absolute; inset: -4px; border-radius: 50%; background: var(--accent-soft); animation: ring 1.6s var(--ease-out) infinite; }
+  @keyframes ring { 0% { transform: scale(0.6); opacity: 1; } 100% { transform: scale(1.5); opacity: 0; } }
+  .cmd {
+    font-family: var(--mono); font-size: 12.5px; color: var(--text);
+    background: oklch(1 0 0 / 0.045); border: 1px solid oklch(1 0 0 / 0.06);
+    border-radius: 10px; padding: 9px 11px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .cmd span { color: var(--text-3); }
+  .actions { display: flex; gap: 8px; margin-top: 2px; }
+  .btn {
+    flex: 1; height: 34px; border-radius: 10px; border: 0;
+    font: 500 13px var(--font); letter-spacing: -0.01em;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    cursor: pointer;
+    transition: transform 140ms var(--ease-out), background-color 160ms ease;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn kbd { font: 400 10.5px var(--mono); opacity: 0.55; }
+  .btn-ghost { background: oklch(1 0 0 / 0.07); color: var(--text-2); }
+  .btn-main { background: var(--accent); color: oklch(0.16 0.02 45); }
+  @media (hover: hover) and (pointer: fine) {
+    .btn-ghost:hover { background: oklch(1 0 0 / 0.11); }
+    .btn-main:hover { background: oklch(0.74 0.14 42); }
+  }
+
+  /* done */
+  .l-done .check { color: var(--ok); width: 16px; height: 16px; flex: none; }
+  .l-done .check path { stroke-dasharray: 20; stroke-dashoffset: 20; }
+  .island[data-state="done"] .l-done .check path { stroke-dashoffset: 0; transition: stroke-dashoffset 360ms var(--ease-out) 140ms; }
+
+  /* ---------- stage copy + controls ---------- */
+  .stage {
+    display: grid; align-content: center; justify-items: center;
+    padding: 80px 16px 40px; text-align: center;
+  }
+  .kicker { font: 500 11px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-3); }
+  h1 {
+    margin-top: 14px;
+    font-weight: 500;
+    font-size: clamp(2.2rem, 6vw, 4.6rem);
+    line-height: 0.95; letter-spacing: -0.04em;
+  }
+  h1 em { font-style: normal; color: var(--accent); }
+  .lede { margin-top: 18px; max-width: 46ch; color: var(--text-2); font-size: 16px; line-height: 1.5; letter-spacing: -0.01em; }
+
+  .dock {
+    margin: 0 auto 28px; padding: 6px;
+    display: flex; flex-wrap: wrap; gap: 4px; justify-content: center;
+    background: oklch(0.15 0.008 60 / 0.75);
+    border: 1px solid oklch(1 0 0 / 0.06);
+    border-radius: 14px;
+    backdrop-filter: blur(12px);
+    max-width: calc(100% - 32px);
+  }
+  .dock button {
+    height: 34px; padding: 0 14px; border-radius: 9px; border: 0;
+    background: transparent; color: var(--text-2);
+    font: 500 13px var(--font); cursor: pointer;
+    transition: background-color 160ms ease, color 160ms ease, transform 140ms var(--ease-out);
+  }
+  .dock button:active { transform: scale(0.97); }
+  .dock button[aria-pressed="true"] { background: oklch(1 0 0 / 0.09); color: var(--text); }
+  .dock .play { color: var(--accent); }
+  .dock .sep { width: 1px; background: oklch(1 0 0 / 0.08); margin: 6px 2px; }
+  .hint { text-align: center; font-size: 12px; color: var(--text-3); margin: -14px 0 24px; padding: 0 16px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .layer { filter: none; transform: none; transition: opacity 160ms ease; }
+    .glyph.spin, .bars i, .ring::before, .steps .st-run { animation: none; }
+    .steps li { transform: none; }
+  }
+</style>
+</head>
+<body>
+<div class="desk">
+  <div class="topline">
+    <div class="island" id="island" data-state="idle" aria-live="polite">
+
+      <div class="layer l-idle"><span class="dot"></span></div>
+
+      <div class="layer l-working">
+        <div class="row">
+          <svg class="glyph spin" viewBox="0 0 16 16" aria-hidden="true"><g stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M8 1.5v4M8 10.5v4M1.5 8h4M10.5 8h4M3.4 3.4l2.8 2.8M9.8 9.8l2.8 2.8M12.6 3.4 9.8 6.2M6.2 9.8l-2.8 2.8"/></g></svg>
+          <span class="label" data-tool-label><b>Bash</b>npm test</span>
+          <span class="bars" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span class="time" data-timer>00:00</span>
+        </div>
+      </div>
+
+      <div class="layer l-expanded">
+        <div class="row">
+          <svg class="glyph spin" viewBox="0 0 16 16" aria-hidden="true"><g stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M8 1.5v4M8 10.5v4M1.5 8h4M10.5 8h4M3.4 3.4l2.8 2.8M9.8 9.8l2.8 2.8M12.6 3.4 9.8 6.2M6.2 9.8l-2.8 2.8"/></g></svg>
+          <span class="label" data-tool-label><b>Bash</b>npm test</span>
+          <span class="time" data-timer>00:00</span>
+        </div>
+        <div class="meta">claude-island · C:\Claude</div>
+        <ul class="steps">
+          <li><span class="st-ok">✓</span><span class="tool">Read</span><span>src/island.ts</span></li>
+          <li><span class="st-ok">✓</span><span class="tool">Edit</span><span>src/island.ts</span></li>
+          <li><span class="st-run"></span><span class="tool">Bash</span><span>npm test</span></li>
+        </ul>
+      </div>
+
+      <div class="layer l-permission">
+        <div class="perm-head">
+          <span class="ring"><svg class="glyph" viewBox="0 0 16 16" aria-hidden="true"><g stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M8 1.5v4M8 10.5v4M1.5 8h4M10.5 8h4M3.4 3.4l2.8 2.8M9.8 9.8l2.8 2.8M12.6 3.4 9.8 6.2M6.2 9.8l-2.8 2.8"/></g></svg></span>
+          Quer rodar um comando
+          <span class="where">claude-island</span>
+        </div>
+        <div class="cmd"><span>$</span> npm install --save-dev vitest</div>
+        <div class="actions">
+          <button class="btn btn-ghost" data-deny>Negar <kbd>Esc</kbd></button>
+          <button class="btn btn-main" data-allow>Permitir <kbd>↵</kbd></button>
+        </div>
+      </div>
+
+      <div class="layer l-done">
+        <div class="row">
+          <svg class="check" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5 6.5 12 13 4.5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="label">Pronto</span>
+          <span class="time" data-done-time>2m 14s</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <main class="stage">
+    <p class="kicker">Preview · Claude Island</p>
+    <h1>O Claude trabalhando,<br>no <em>topo</em> da tela.</h1>
+    <p class="lede">Pílula parada quando nada acontece. Mostra a ferramenta em uso enquanto roda, cresce quando precisa de você e encolhe sozinha quando termina.</p>
+  </main>
+
+  <div>
+    <nav class="dock" aria-label="Estados">
+      <button data-go="idle" aria-pressed="true">Parada</button>
+      <button data-go="working" aria-pressed="false">Trabalhando</button>
+      <button data-go="expanded" aria-pressed="false">Detalhes</button>
+      <button data-go="permission" aria-pressed="false">Permissão</button>
+      <button data-go="done" aria-pressed="false">Pronto</button>
+      <span class="sep"></span>
+      <button class="play" data-play>▶ Simular sessão</button>
+    </nav>
+    <p class="hint">Passe o mouse na ilha enquanto ela trabalha para ver os detalhes.</p>
+  </div>
+</div>
+
+<script>
+(() => {
+  const island = document.getElementById('island');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const SIZES = {
+    idle:       { w: 128, h: 34,  r: 17 },
+    working:    { w: 340, h: 38,  r: 19 },
+    expanded:   { w: 400, h: 176, r: 28 },
+    permission: { w: 420, h: 168, r: 28 },
+    done:       { w: 236, h: 38,  r: 19 },
+  };
+
+  /* ---- spring: interrompível, mantém velocidade, leve overshoot ---- */
+  const K = 380, C = 26;           // rigidez / amortecimento
+  const cur = { w: 128, h: 34, r: 17 }, vel = { w: 0, h: 0, r: 0 };
+  let target = { ...cur }, raf = 0, last = 0;
+
+  function frame(t) {
+    const dt = Math.min(0.032, (t - (last || t)) / 1000) || 1 / 60;
+    last = t;
+    let moving = false;
+    for (const k of ['w', 'h', 'r']) {
+      const a = -K * (cur[k] - target[k]) - C * vel[k];
+      vel[k] += a * dt;
+      cur[k] += vel[k] * dt;
+      if (Math.abs(vel[k]) > 0.05 || Math.abs(cur[k] - target[k]) > 0.05) moving = true;
+      else { cur[k] = target[k]; vel[k] = 0; }
+    }
+    paint();
+    raf = moving ? requestAnimationFrame(frame) : (last = 0, 0);
+  }
+  function paint() {
+    island.style.width = cur.w + 'px';
+    island.style.height = cur.h + 'px';
+    island.style.borderRadius = cur.r + 'px';
+  }
+
+  let state = 'idle';
+  function setState(next) {
+    if (next === state) return;
+    state = next;
+    island.dataset.state = next;
+    target = { ...SIZES[next] };
+    if (reduce) { Object.assign(cur, target); paint(); }
+    else if (!raf) raf = requestAnimationFrame(frame);
+    document.querySelectorAll('[data-go]').forEach(b =>
+      b.setAttribute('aria-pressed', String(b.dataset.go === next)));
+    if (next === 'working' || next === 'expanded') startTimer();
+    if (next === 'idle') stopTimer();
+  }
+
+  /* ---- timer ---- */
+  let t0 = 0, tick = 0;
+  function startTimer() {
+    if (tick) return;
+    t0 = performance.now();
+    tick = setInterval(() => {
+      const s = Math.floor((performance.now() - t0) / 1000);
+      const txt = String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+      document.querySelectorAll('[data-timer]').forEach(el => el.textContent = txt);
+    }, 250);
+  }
+  function stopTimer() { clearInterval(tick); tick = 0;
+    document.querySelectorAll('[data-timer]').forEach(el => el.textContent = '00:00'); }
+  function elapsed() {
+    const s = tick ? Math.max(1, Math.floor((performance.now() - t0) / 1000)) : 134;
+    return s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` : `${s}s`;
+  }
+
+  /* ---- troca de ferramenta com blur ---- */
+  function setTool(tool, arg) {
+    document.querySelectorAll('[data-tool-label]').forEach(el => {
+      el.innerHTML = `<b>${tool}</b>${arg}`;
+      if (!reduce) el.animate(
+        [{ opacity: 0, filter: 'blur(4px)', transform: 'translateY(4px)' },
+         { opacity: 1, filter: 'blur(0)', transform: 'none' }],
+        { duration: 240, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
+    });
+  }
+
+  /* ---- hover expande só no estado trabalhando ---- */
+  let leaveT;
+  island.addEventListener('pointerenter', () => {
+    clearTimeout(leaveT);
+    if (state === 'working') setState('expanded');
+  });
+  island.addEventListener('pointerleave', () => {
+    leaveT = setTimeout(() => { if (state === 'expanded') setState('working'); }, 180);
+  });
+
+  /* ---- permissão ---- */
+  let onDecision = null;
+  function decide(ok) {
+    if (state !== 'permission') return;
+    setTool(ok ? 'Bash' : 'Negado', ok ? 'npm install --save-dev vitest' : 'npm install');
+    setState('working');
+    onDecision && onDecision(ok);
+  }
+  island.querySelector('[data-allow]').addEventListener('click', () => decide(true));
+  island.querySelector('[data-deny]').addEventListener('click', () => decide(false));
+  addEventListener('keydown', e => {
+    if (state !== 'permission') return;
+    if (e.key === 'Enter') { e.preventDefault(); decide(true); }
+    if (e.key === 'Escape') { e.preventDefault(); decide(false); }
+  });
+
+  /* ---- done -> volta a parada ---- */
+  let doneT;
+  function finish() {
+    island.querySelector('[data-done-time]').textContent = elapsed();
+    setState('done');
+    clearTimeout(doneT);
+    doneT = setTimeout(() => { if (state === 'done') setState('idle'); }, 3200);
+  }
+
+  /* ---- controles ---- */
+  let sim = 0;
+  document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => {
+    sim++; onDecision = null; clearTimeout(doneT);
+    const go = b.dataset.go;
+    if (go === 'done') finish(); else setState(go);
+  }));
+
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  document.querySelector('[data-play]').addEventListener('click', async () => {
+    const id = ++sim;
+    const alive = () => id === sim;
+    stopTimer(); setState('idle'); await wait(500);
+    const steps = [['Read', 'src/island.ts'], ['Grep', '"setState"'], ['Edit', 'src/island.ts']];
+    setTool(...steps[0]); setState('working');
+    for (const s of steps.slice(1)) { await wait(1500); if (!alive()) return; setTool(...s); }
+    await wait(1500); if (!alive()) return;
+    setState('permission');
+    const ok = await new Promise(r => (onDecision = r));
+    onDecision = null; if (!alive()) return;
+    if (ok) { await wait(1600); if (!alive()) return; setTool('Bash', 'npm test'); }
+    await wait(1800); if (!alive()) return;
+    finish();
+  });
+
+  paint();
+})();
+</script>
+</body>
+</html>
